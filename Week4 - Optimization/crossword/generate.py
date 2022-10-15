@@ -152,11 +152,9 @@ class CrosswordCreator():
 
         vars = self.crossword.variables
 
-        for var1 in vars:
-            for var2 in vars:
-                if var1 != var2:
-                    if self.crossword.overlaps[var1,var2] != None:
-                        queue.append((var1,var2))
+        for var in vars:
+            for neigh in self.crossword.neighbors(var):
+                        queue.append((var,neigh))
 
         while len(queue) != 0:
             
@@ -170,9 +168,8 @@ class CrosswordCreator():
                 if len(self.domains[x]) == 0:
                     return False
 
-                for z in vars:
-                    if x != z and y != z and self.crossword.overlaps[z,x] != None:
-                        queue.append((z,x))
+                for z in self.crossword.neighbors(x) - {y}:
+                        queue.append((x,z))
 
         return True
 
@@ -207,7 +204,7 @@ class CrosswordCreator():
             for y in assignment.keys():
                 val1 = assignment[x]
                 val2 = assignment[y]
-                if x != y and self.crossword.overlaps[x,y] != None:
+                if x != y and self.crossword.overlaps[x,y]:
                     intersec = self.crossword.overlaps[x,y]
 
                     ind1 = intersec[0]
@@ -231,8 +228,8 @@ class CrosswordCreator():
 
         for word in self.domains[v]:
             constraint[word] = 0
-            for var in vars:
-                if v != var and word in self.domains[var]:
+            for neigh in self.crossword.neighbors(v):
+                if word in self.domains[neigh]:
                     n = constraint[word]
                     constraint.update({word:n + 1})
 
@@ -248,7 +245,6 @@ class CrosswordCreator():
         degree. If there is a tie, any of the tied variables are acceptable
         return values.
         """
-
         vars = self.crossword.variables
 
         if len(vars) - len(assignment.keys()) == 1:
@@ -257,19 +253,8 @@ class CrosswordCreator():
         l = list(vars - assignment.keys())
         l.sort(key = lambda x:len(self.domains[x]))
 
-
         if len(self.domains[l[0]]) == len(self.domains[l[1]]):
-
-            deg = dict()
-            for x in l:
-                deg[x] = 0
-                for y in l:
-                    if x != y and self.crossword.overlaps[x,y]:
-                        n = deg[x]
-                        deg.update({x:n+1})
-
-            l.sort(key = lambda v:deg[v])     
-
+            l.sort(reverse=True, key = lambda v: len(self.crossword.neighbors(v)))     
             
         return l[0]
 
